@@ -1,8 +1,9 @@
 version: "3"
 
 networks:
-  gateway:
-    external: true
+  default:
+    name: gateway
+    driver: bridge
 
 services:
   traefik:
@@ -13,11 +14,15 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.http.address=:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.docker.network=gateway"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
     restart: unless-stopped
     ports:
       - 80:80
       - 8080:8080
-    networks:
-      - gateway
     volumes:
       - //var/run/docker.sock:/var/run/docker.sock
