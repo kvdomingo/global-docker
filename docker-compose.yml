@@ -1,27 +1,48 @@
-version: "3"
+name: global-docker
 
 networks:
   default:
-    name: gateway
+    name: traefik
     driver: bridge
+    ipam:
+      config:
+        - gateway: 172.20.0.1
+          subnet: 172.20.0.0/24
+
+volumes:
+  portainer-data:
 
 services:
   traefik:
-    image: traefik:latest
-    command:
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.http.address=:80"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik.entrypoints=http"
-      - "traefik.docker.network=gateway"
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+    image: traefik:v3.2
     restart: unless-stopped
-    ports:
-      - 80:80
+    security_opt:
+      - no-new-privileges:true
     volumes:
-      - //var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.traefik.rule: Host(`traefik.localhost`)
+      traefik.http.routers.traefik.entrypoints: http
+      traefik.http.routers.traefik.service: api@internal
+      traefik.http.services.traefik.loadbalancer.server.port: 8080
+      traefik.docker.network: traefik
+    ports:
+      - '80:80'
+
+  portainer:
+    image: portainer/portainer-ee:2.24.1
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.portainer.rule: Host(`portainer.localhost`)
+      traefik.http.routers.portainer.entrypoints: http
+      traefik.http.routers.portainer.service: portainer
+      traefik.http.services.portainer.loadbalancer.server.port: 9000
+      traefik.docker.network: traefik
