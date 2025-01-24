@@ -11,6 +11,7 @@ networks:
 
 volumes:
   portainer-data:
+  pgadmin-data:
 
 services:
   traefik:
@@ -45,4 +46,20 @@ services:
       traefik.http.routers.portainer.entrypoints: http
       traefik.http.routers.portainer.service: portainer
       traefik.http.services.portainer.loadbalancer.server.port: 9000
-      traefik.docker.network: traefik
+
+  pgadmin:
+    image: dpage/pgadmin4:8.14
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: hello@kvd.studio
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_ADDRESS: 0.0.0.0
+      PGADMIN_LISTEN_PORT: 5000
+    volumes:
+      - pgadmin-data:/pgadmin
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.pgadmin.rule: Host(`pgadmin.localhost`)
+      traefik.http.routers.pgadmin.entrypoints: http
+      traefik.http.routers.pgadmin.service: pgadmin
+      traefik.http.services.pgadmin.loadbalancer.server.port: 5000
