@@ -48,7 +48,7 @@ services:
       traefik.http.services.portainer.loadbalancer.server.port: 9000
 
   pgadmin:
-    image: dpage/pgadmin4:8.14
+    image: dpage/pgadmin4:9
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: hello@kvd.studio
@@ -65,7 +65,7 @@ services:
       traefik.http.services.pgadmin.loadbalancer.server.port: 5000
 
   semaphore:
-    image: semaphoreui/semaphore:v2.11.2
+    image: semaphoreui/semaphore:v2.13.12
     restart: unless-stopped
     environment:
       SEMAPHORE_DB_DIALECT: bolt
@@ -80,14 +80,12 @@ services:
       traefik.http.routers.semaphore.service: semaphore
       traefik.http.services.semaphore.loadbalancer.server.port: 3000
 
-  web-check:
-    image: lissy93/web-check:1.0.0
+  registry:
+    image: registry:3
     restart: unless-stopped
-    environment:
-      API_CORS_ORIGIN: web-check.localhost
     labels:
       traefik.enable: 'true'
-      traefik.http.routers.web-check.rule: Host(`web-check.localhost`)
-      traefik.http.routers.web-check.entrypoints: http
-      traefik.http.routers.web-check.service: web-check
-      traefik.http.services.web-check.loadbalancer.server.port: 3000
+      traefik.http.routers.registry.rule: Host(`registry.localhost`)
+      traefik.http.routers.registry.entrypoints: http
+      traefik.http.routers.registry.service: registry
+      traefik.http.services.registry.loadbalancer.server.port: 5000
