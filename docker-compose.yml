@@ -8,10 +8,15 @@ networks:
       config:
         - gateway: 172.20.0.1
           subnet: 172.20.0.0/24
+  solidtime:
+    driver: bridge
 
 volumes:
   portainer-data:
   pgadmin-data:
+  solidtime-db-data:
+  solidtime-log-data:
+  solidtime-app-data:
 
 services:
   traefik:
@@ -89,3 +94,100 @@ services:
       traefik.http.routers.registry.entrypoints: http
       traefik.http.routers.registry.service: registry
       traefik.http.services.registry.loadbalancer.server.port: 5000
+
+  ### Solidtime
+  solidtime-app:
+    restart: unless-stopped
+    image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
+    user: "1000:1000"
+    networks:
+      - solidtime
+      - default
+    volumes:
+      - "solidtime-app-data:/var/www/html/storage"
+      - "solidtime-log-data:/var/www/html/storage/logs"
+      - "./solidtime-app-storage:/var/www/html/storage/app"
+    environment:
+      CONTAINER_MODE: http
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8000/health-check/up" ]
+    env_file:
+      - .env
+    depends_on:
+      - solidtime-database
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.solidtime.rule: Host(`solidtime.localhost`)
+      traefik.http.routers.solidtime.entrypoints: http
+      traefik.http.routers.solidtime.service: solidtime
+      traefik.http.services.solidtime.loadbalancer.server.port: 8000
+
+  solidtime-scheduler:
+    restart: unless-stopped
+    image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
+    user: "1000:1000"
+    networks:
+      - solidtime
+    volumes:
+      - "solidtime-app-data:/var/www/html/storage"
+      - "solidtime-log-data:/var/www/html/storage/logs"
+      - "./solidtime-app-storage:/var/www/html/storage/app"
+    environment:
+      CONTAINER_MODE: scheduler
+    healthcheck:
+      test: [ "CMD", "healthcheck" ]
+    env_file:
+      - .env
+    depends_on:
+      - solidtime-database
+
+  solidtime-queue:
+    restart: unless-stopped
+    image: "solidtime/solidtime:${SOLIDTIME_IMAGE_TAG:-latest}"
+    user: "1000:1000"
+    networks:
+      - solidtime
+    volumes:
+      - "solidtime-app-data:/var/www/html/storage"
+      - "./solidtime-app-storage:/var/www/html/storage/app"
+    environment:
+      CONTAINER_MODE: worker
+      WORKER_COMMAND: "php /var/www/html/artisan queue:work"
+    healthcheck:
+      test: [ "CMD", "healthcheck" ]
+    env_file:
+      - .env
+    depends_on:
+      - solidtime-database
+
+  solidtime-database:
+    restart: unless-stopped
+    image: 'postgres:15'
+    environment:
+      PGPASSWORD: '${DB_PASSWORD:-secret}'
+      POSTGRES_DB: '${DB_DATABASE}'
+      POSTGRES_USER: '${DB_USERNAME}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+    volumes:
+      - solidtime-db-data:/var/lib/postgresql/data
+    networks:
+      - solidtime
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - '-q'
+        - '-d'
+        - '${DB_DATABASE}'
+        - '-U'
+        - '${DB_USERNAME}'
+      retries: 3
+      timeout: 5s
+
+  solidtime-gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    networks:
+      - solidtime
+    healthcheck:
+      test: [ "CMD", "curl", "--silent", "--fail", "http://localhost:3000/health" ]

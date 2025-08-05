@@ -1,0 +1,5 @@
+.env
+*.env
+.env.*
+
+solidtime-app-storage/
