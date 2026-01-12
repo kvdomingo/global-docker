@@ -33,7 +33,7 @@ services:
       - '80:80'
 
   portainer:
-    image: portainer/portainer-ee:2.24.1
+    image: portainer/portainer-ee:latest
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -63,22 +63,6 @@ services:
       traefik.http.routers.pgadmin.entrypoints: http
       traefik.http.routers.pgadmin.service: pgadmin
       traefik.http.services.pgadmin.loadbalancer.server.port: 5000
-
-  semaphore:
-    image: semaphoreui/semaphore:v2.13.12
-    restart: unless-stopped
-    environment:
-      SEMAPHORE_DB_DIALECT: bolt
-      SEMAPHORE_ADMIN: admin
-      SEMAPHORE_ADMIN_PASSWORD: admin
-      SEMAPHORE_ADMIN_NAME: Admin
-      SEMAPHORE_ADMIN_EMAIL: admin@localhost
-    labels:
-      traefik.enable: 'true'
-      traefik.http.routers.semaphore.rule: Host(`semaphore.localhost`)
-      traefik.http.routers.semaphore.entrypoints: http
-      traefik.http.routers.semaphore.service: semaphore
-      traefik.http.services.semaphore.loadbalancer.server.port: 3000
 
   registry:
     image: registry:3
