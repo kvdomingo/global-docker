@@ -16,6 +16,7 @@ services:
   traefik:
     image: traefik:v3
     restart: unless-stopped
+    pull_policy: weekly
     security_opt:
       - no-new-privileges:true
     volumes:
@@ -32,8 +33,9 @@ services:
       - '80:80'
 
   portainer:
-    image: portainer/portainer-ee:latest
+    image: portainer/portainer-ce:latest
     restart: unless-stopped
+    pull_policy: weekly
     security_opt:
       - no-new-privileges:true
     volumes:
