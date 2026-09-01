@@ -11,6 +11,8 @@ networks:
 
 volumes:
   portainer-data:
+  kestra-db-data:
+  kestra-app-data:
 
 services:
   traefik:
@@ -47,3 +49,33 @@ services:
       traefik.http.routers.portainer.entrypoints: http
       traefik.http.routers.portainer.service: portainer
       traefik.http.services.portainer.loadbalancer.server.port: 9000
+
+  kestra-init:
+    image: busybox
+    restart: no
+    command: >-
+      chown -R 1000:1000 /app/storage /app/data /tmp
+    volumes:
+      - kestra-app-data:/app/storage
+      - kestra-db-data:/app/data
+      - /tmp/kestra:/tmp
+
+  kestra:
+    image: kestra/kestra:latest
+    restart: unless-stopped
+    pull_policy: weekly
+    command: [server, local]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kestra-app-data:/app/storage
+      - kestra-db-data:/app/data
+      - /tmp/kestra:/tmp
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.kestra.rule: Host(`kestra.localhost`)
+      traefik.http.routers.kestra.entrypoints: http
+      traefik.http.routers.kestra.service: kestra
+      traefik.http.services.kestra.loadbalancer.server.port: 8080
+    depends_on:
+      kestra-init:
+        condition: service_completed_successfully
