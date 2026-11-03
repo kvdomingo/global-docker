@@ -48,26 +48,3 @@ services:
       traefik.http.routers.portainer.entrypoints: http
       traefik.http.routers.portainer.service: portainer
       traefik.http.services.portainer.loadbalancer.server.port: 9000
-
-  ### AI ###
-  ai-memory:
-    image: akitaonrails/ai-memory:latest
-    pull_policy: weekly
-    restart: unless-stopped
-    environment:
-      AI_MEMORY_BIND: 0.0.0.0:49374
-      AI_MEMORY_AUTH_TOKEN: "${AI_MEMORY_AUTH_TOKEN}"
-      AI_MEMORY_ALLOWED_HOSTS: '["memory.localhost", "localhost", "127.0.0.1", "::1"]'
-      AI_MEMORY_LLM_PROVIDER: gemini
-      AI_MEMORY_LLM_MODEL: gemini-3.8-flash
-      AI_MEMORY_EMBEDDING_PROVIDER: gemini
-      AI_MEMORY_EMBEDDING_MODEL: gemini-embedding-2
-      AI_MEMORY_EMBEDDING_DIM: 768
-      AI_MEMORY_GEMINI_SAFE_SCHEMAS: true
-      GEMINI_API_KEY: "${GEMINI_API_KEY}"
-    labels:
-      traefik.enable: "true"
-      traefik.http.routers.ai-memory.rule: Host(`memory.localhost`)
-      traefik.http.routers.ai-memory.entrypoints: http
-      traefik.http.routers.ai-memory.service: ai-memory
-      traefik.http.services.ai-memory.loadbalancer.server.port: 49374
